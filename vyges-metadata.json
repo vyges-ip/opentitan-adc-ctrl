@@ -5,6 +5,17 @@
   "source": {
     "type": "git",
     "url": "https://github.com/lowRISC/opentitan",
-    "commit": "304378684dfcf5be73bbd14faffa71790793d8c6"
-  }
+    "commit": "304378684dfcf5be73bbd14faffa71790793d8c6",
+    "rtl_path": "rtl",
+    "rtl_files": [
+      "rtl/adc_ctrl.sv",
+      "rtl/adc_ctrl_core.sv",
+      "rtl/adc_ctrl_fsm.sv",
+      "rtl/adc_ctrl_intr.sv",
+      "rtl/adc_ctrl_pkg.sv",
+      "rtl/adc_ctrl_reg_pkg.sv",
+      "rtl/adc_ctrl_reg_top.sv"
+    ]
+  },
+  "updated": "2026-02-19T06:03:45Z"
 }
