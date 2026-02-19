@@ -19,7 +19,7 @@
       "rtl/adc_ctrl_reg_top.sv"
     ]
   },
-  "updated": "2026-02-19T06:12:02Z",
+  "updated": "2026-02-19T06:22:56Z",
   "$schema": "https://vyges.com/schema/v1/vyges-metadata.schema.json",
   "x-version": "1.0.0",
   "description": "Adc Ctrl. OpenTitan IP block from hw/ip/adc_ctrl.",
@@ -64,5 +64,11 @@
   "community": {
     "issues": "https://github.com/vyges-ip/opentitan-adc-ctrl/issues",
     "contributions": "https://github.com/vyges-ip/opentitan-adc-ctrl/pulls"
+  },
+  "branding": {
+    "provider": "Vyges IP Catalog",
+    "logo": "https://vyges.com/assets/logo.svg",
+    "website": "https://github.com/vyges-ip/opentitan-adc-ctrl",
+    "usage": "Use of the logo is permitted for attribution or compatibility references only."
   }
 }
