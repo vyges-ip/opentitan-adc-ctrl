@@ -6,6 +6,8 @@
     "type": "git",
     "url": "https://github.com/lowRISC/opentitan",
     "commit": "304378684dfcf5be73bbd14faffa71790793d8c6",
+    "ip_path": "hw/ip/adc_ctrl",
+    "private": false,
     "rtl_path": "rtl",
     "rtl_files": [
       "rtl/adc_ctrl.sv",
@@ -17,5 +19,50 @@
       "rtl/adc_ctrl_reg_top.sv"
     ]
   },
-  "updated": "2026-02-19T06:03:45Z"
+  "updated": "2026-02-19T06:12:02Z",
+  "$schema": "https://vyges.com/schema/v1/vyges-metadata.schema.json",
+  "x-version": "1.0.0",
+  "description": "Adc Ctrl. OpenTitan IP block from hw/ip/adc_ctrl.",
+  "template": "opentitan-ip-template@1.0.0",
+  "target": [
+    "fpga",
+    "asic"
+  ],
+  "design_type": [
+    "digital"
+  ],
+  "maturity": "imported",
+  "created": "2026-02-19T06:12:02Z",
+  "interfaces": [
+    {
+      "type": "bus",
+      "direction": "input",
+      "protocol": "TL-UL",
+      "width": 32,
+      "description": "TL-UL host interface for register access"
+    },
+    {
+      "type": "bus",
+      "direction": "output",
+      "protocol": "ADC",
+      "description": "Analog-to-digital converter interface"
+    }
+  ],
+  "categories": {
+    "primary": "analog",
+    "secondary": [
+      "adc",
+      "converter"
+    ],
+    "tags": [
+      "adc",
+      "converter",
+      "opentitan",
+      "lowrisc-opentitan"
+    ]
+  },
+  "community": {
+    "issues": "https://github.com/vyges-ip/opentitan-adc-ctrl/issues",
+    "contributions": "https://github.com/vyges-ip/opentitan-adc-ctrl/pulls"
+  }
 }
