@@ -3,24 +3,266 @@
   "x-version": "1.0.0",
   "name": "opentitan-adc-ctrl",
   "version": "0.1.0",
-  "description": "ADC controller with detection FSM, configurable filter thresholds, wakeup-on-threshold, and interrupt generation. Interfaces with external ADC via dedicated signals. TileLink-UL slave. Extracted from OpenTitan (lowRISC).",
+  "description": "The OpenTitan ADC Controller (adc_ctrl) is a digital peripheral that manages the operation of an analog-to-digital converter (ADC), including power management, sampling control, and data filtering. It supports multiple channels, low-power modes, and integrity checks for secure and reliable operation.",
   "license": "Apache-2.0",
   "maturity": "production",
-  "target": ["asic", "fpga"],
-  "design_type": ["digital"],
-  "created": "2026-02-19T06:12:02Z",
-  "updated": "2026-03-27T19:35:00Z",
-  "source": {"type": "git", "url": "https://github.com/lowRISC/opentitan", "private": false, "rtl_path": "rtl"},
-  "maintainers": [{"name": "Vyges", "email": "team@vyges.com", "github": "vyges"}],
-  "interfaces": [{"type": "bus", "direction": "slave", "protocol": "TL-UL", "port": "tl", "width": 32}],
-  "architecture": {"type": "peripheral", "features": ["ADC interface with detection FSM", "Configurable filter thresholds for power-efficient monitoring", "Wakeup-on-threshold for low-power modes", "Interrupt generation on threshold crossing", "7 RTL files, 5,693 lines"]},
-  "dependencies": [{"name": "opentitan-prim", "type": "library"}, {"name": "opentitan-tlul", "type": "bus"}],
-  "documentation": {"upstream": "https://opentitan.org/book/hw/ip/adc-ctrl/"},
-  "artifacts": {"total_rtl_lines": 5693},
-  "categories": {"primary": "peripheral", "secondary": ["analog", "sensor"], "tags": ["adc-ctrl", "adc", "analog", "threshold", "wakeup", "opentitan", "tl-ul"]},
-  "trust": {"verification_level": "silicon_proven", "tapeout_count": 3, "maintained": true, "last_activity": "2026-03-27"},
-  "asic": {"flavor": "digital", "technology": ["sky130A"]},
-  "fpga": {"toolchain": ["Vivado", "Yosys"]},
-  "keywords": ["adc-ctrl", "opentitan", "tl-ul"],
-  "meta": {"template": {"generator": "manual (gold-standard pass 2026-03-27)"}, "schema": {"version": "1.0.0"}}
+  "target": [
+    "asic",
+    "fpga"
+  ],
+  "design_type": [
+    "digital"
+  ],
+  "created": "2026-03-27T23:04:48Z",
+  "updated": "2026-03-27T23:04:48Z",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/lowRISC/opentitan",
+    "commit": "7fbd85829ec6354ef6497df69536cefe862c1f5a",
+    "ip_path": "hw/ip/adc_ctrl",
+    "private": false,
+    "containsEncryptedPayload": false,
+    "indexing": true
+  },
+  "maintainers": [
+    {
+      "name": "Vyges",
+      "email": "team@vyges.com",
+      "url": "https://vyges.com",
+      "github": "vyges"
+    }
+  ],
+  "interfaces": [
+    {
+      "type": "clock",
+      "direction": "input",
+      "protocol": "standard",
+      "port": "clk_i",
+      "width": 1,
+      "description": "Main clock input for the ADC controller."
+    },
+    {
+      "type": "reset",
+      "direction": "input",
+      "protocol": "standard",
+      "port": "rst_ni",
+      "width": 1,
+      "description": "Active-low reset signal for the main clock domain."
+    },
+    {
+      "type": "clock",
+      "direction": "input",
+      "protocol": "standard",
+      "port": "clk_aon_i",
+      "width": 1,
+      "description": "Always-on clock input for the ADC controller."
+    },
+    {
+      "type": "reset",
+      "direction": "input",
+      "protocol": "standard",
+      "port": "rst_aon_ni",
+      "width": 1,
+      "description": "Active-low reset signal for the always-on clock domain."
+    },
+    {
+      "type": "bus",
+      "direction": "slave",
+      "protocol": "TL-UL",
+      "port": "tl_i",
+      "width": 32,
+      "description": "TileLink UL host-to-device interface for register access."
+    },
+    {
+      "type": "bus",
+      "direction": "master",
+      "protocol": "TL-UL",
+      "port": "tl_o",
+      "width": 32,
+      "description": "TileLink UL device-to-host interface for register responses."
+    },
+    {
+      "type": "output",
+      "direction": "output",
+      "protocol": "custom",
+      "port": "reg2hw",
+      "width": 32,
+      "description": "Output signals from the ADC controller to hardware."
+    },
+    {
+      "type": "input",
+      "direction": "input",
+      "protocol": "custom",
+      "port": "hw2reg",
+      "width": 32,
+      "description": "Input signals from hardware to the ADC controller."
+    },
+    {
+      "type": "interrupt",
+      "direction": "output",
+      "protocol": "custom",
+      "port": "intg_err_o",
+      "width": 1,
+      "description": "Output signal indicating integrity check errors."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "AW",
+      "type": "int",
+      "default": 7,
+      "description": "Address width for the ADC controller."
+    },
+    {
+      "name": "DW",
+      "type": "int",
+      "default": 32,
+      "description": "Data width for the ADC controller."
+    },
+    {
+      "name": "DBW",
+      "type": "int",
+      "default": 4,
+      "description": "Byte width derived from data width."
+    },
+    {
+      "name": "NumAdcFilter",
+      "type": "int",
+      "default": 8,
+      "description": "Number of ADC filters supported."
+    },
+    {
+      "name": "NumAdcChannel",
+      "type": "int",
+      "default": 2,
+      "description": "Number of ADC channels supported."
+    },
+    {
+      "name": "NumAlerts",
+      "type": "int",
+      "default": 1,
+      "description": "Number of alert signals supported."
+    },
+    {
+      "name": "BlockAw",
+      "type": "int",
+      "default": 7,
+      "description": "Address width within the ADC block."
+    },
+    {
+      "name": "NumRegs",
+      "type": "int",
+      "default": 32,
+      "description": "Number of registers for every interface."
+    }
+  ],
+  "performance": {},
+  "architecture": {
+    "type": "peripheral",
+    "features": [
+      "ADC control and management",
+      "Power management with low-power modes",
+      "Multi-channel ADC support",
+      "Integrity check and error reporting",
+      "Configurable sampling and filtering"
+    ]
+  },
+  "asic": {
+    "flavor": "digital",
+    "technology": [
+      "sky130A"
+    ]
+  },
+  "fpga": {
+    "toolchain": [
+      "Vivado"
+    ],
+    "devices": [
+      "Artix-7"
+    ]
+  },
+  "dependencies": [
+    {
+      "name": "tlul_pkg",
+      "type": "library",
+      "description": "TileLink UL protocol package for communication."
+    },
+    {
+      "name": "adc_ctrl_reg_pkg",
+      "type": "library",
+      "description": "Register package for ADC controller."
+    },
+    {
+      "name": "adc_ctrl_pkg",
+      "type": "library",
+      "description": "Package defining ADC controller-specific types and parameters."
+    },
+    {
+      "name": "prim_assert",
+      "type": "library",
+      "description": "Assertion primitives for design verification."
+    },
+    {
+      "name": "prim_reg_we_check",
+      "type": "library",
+      "description": "Primitive for checking write enable signals."
+    },
+    {
+      "name": "tlul_cmd_intg_chk",
+      "type": "library",
+      "description": "TileLink command integrity check module."
+    },
+    {
+      "name": "tlul_rsp_intg_gen",
+      "type": "library",
+      "description": "TileLink response integrity generation module."
+    },
+    {
+      "name": "tlul_adapter_reg",
+      "type": "library",
+      "description": "TileLink adapter for register interface."
+    }
+  ],
+  "test": {
+    "testbenches": [],
+    "status": "upstream_passing",
+    "coverage": "functional"
+  },
+  "documentation": {
+    "upstream": "https://opentitan.org/book/"
+  },
+  "artifacts": {
+    "total_rtl_lines": 5693
+  },
+  "categories": [
+    {
+      "main_category": "Analog & Mixed-Signal",
+      "sub_category": "ADC Controllers"
+    }
+  ],
+  "keywords": [
+    "ADC",
+    "Analog-to-Digital Converter",
+    "Power Management",
+    "OpenTitan",
+    "TileLink"
+  ],
+  "trust": {
+    "verification_level": "silicon_proven",
+    "tapeout_count": 0,
+    "fpga_validated": false,
+    "formal_verified": false,
+    "maintained": true,
+    "last_activity": "2026-03-27"
+  },
+  "meta": {
+    "template": {
+      "generator": "github-models-ai",
+      "template_version": "1.0.0",
+      "generated_at": "2026-03-27T23:04:48Z"
+    },
+    "schema": {
+      "version": "1.0.0"
+    }
+  }
 }
