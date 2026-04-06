@@ -3,7 +3,7 @@ upstream:
   type: "monorepo"
   source: https://github.com/lowRISC/opentitan
   path: hw/ip/adc_ctrl
-  commit: 4be12ad66f947eb28efb785cf644643bf75517af
+  commit: d2f24af56cfaadfec57b2d4974f57aac27aac0fb
   extracted_at: "2026-03-23T01:13:23Z"
 import:
   rtl:
