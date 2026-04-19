@@ -3,7 +3,7 @@ upstream:
   type: "monorepo"
   source: https://github.com/lowRISC/opentitan
   path: hw/ip/adc_ctrl
-  commit: 46cc36599f56f60b344afb031185a85fc8654e68
+  commit: 5b8f6746131e231116e685585432b70359d2c727
   extracted_at: "2026-03-23T01:13:23Z"
 import:
   rtl:
@@ -16,5 +16,4 @@ import:
 license:
   spdx: Apache-2.0
   file: apache-2.0
-
 metadata_locked: true

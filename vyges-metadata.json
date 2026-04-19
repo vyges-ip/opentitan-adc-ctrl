@@ -3,7 +3,7 @@
   "x-version": "1.0.0",
   "name": "opentitan-adc-ctrl",
   "version": "0.1.0",
-  "description": "The OpenTitan ADC Controller (adc_ctrl) is a digital peripheral that manages the operation of an analog-to-digital converter (ADC), including power management, sampling control, and data filtering. It supports multiple channels, low-power modes, and integrity checks for secure and reliable operation.",
+  "description": "The OpenTitan ADC Controller (adc_ctrl) is a digital peripheral that manages analog-to-digital conversion, including power management, low-power sampling, and configurable filtering for multiple ADC channels.",
   "license": "Apache-2.0",
   "maturity": "production",
   "target": [
@@ -13,12 +13,12 @@
   "design_type": [
     "digital"
   ],
-  "created": "2026-03-27T23:04:48Z",
-  "updated": "2026-04-02T03:11:53Z",
+  "created": "2026-04-19T06:11:59Z",
+  "updated": "2026-04-19T06:11:59Z",
   "source": {
     "type": "git",
     "url": "https://github.com/lowRISC/opentitan",
-    "commit": "7fbd85829ec6354ef6497df69536cefe862c1f5a",
+    "commit": "46cc36599f56f60b344afb031185a85fc8654e68",
     "ip_path": "hw/ip/adc_ctrl",
     "private": false,
     "containsEncryptedPayload": false,
@@ -36,23 +36,23 @@
     {
       "type": "clock",
       "direction": "input",
-      "protocol": "standard",
+      "protocol": "generic",
       "port": "clk_i",
       "width": 1,
-      "description": "Main clock input for the ADC controller."
+      "description": "Primary clock input for the ADC controller."
     },
     {
       "type": "reset",
       "direction": "input",
-      "protocol": "standard",
+      "protocol": "generic",
       "port": "rst_ni",
       "width": 1,
-      "description": "Active-low reset signal for the main clock domain."
+      "description": "Active-low reset signal for the primary clock domain."
     },
     {
       "type": "clock",
       "direction": "input",
-      "protocol": "standard",
+      "protocol": "generic",
       "port": "clk_aon_i",
       "width": 1,
       "description": "Always-on clock input for the ADC controller."
@@ -60,7 +60,7 @@
     {
       "type": "reset",
       "direction": "input",
-      "protocol": "standard",
+      "protocol": "generic",
       "port": "rst_aon_ni",
       "width": 1,
       "description": "Active-low reset signal for the always-on clock domain."
@@ -71,7 +71,7 @@
       "protocol": "TL-UL",
       "port": "tl_i",
       "width": 32,
-      "description": "TileLink UL host-to-device interface for register access."
+      "description": "TileLink host-to-device interface for register access."
     },
     {
       "type": "bus",
@@ -79,28 +79,28 @@
       "protocol": "TL-UL",
       "port": "tl_o",
       "width": 32,
-      "description": "TileLink UL device-to-host interface for register responses."
+      "description": "TileLink device-to-host interface for register responses."
     },
     {
-      "type": "output",
+      "type": "data",
       "direction": "output",
       "protocol": "custom",
       "port": "reg2hw",
       "width": 32,
-      "description": "Output signals from the ADC controller to hardware."
+      "description": "Output signal for register-to-hardware communication."
     },
     {
-      "type": "input",
+      "type": "data",
       "direction": "input",
       "protocol": "custom",
       "port": "hw2reg",
       "width": 32,
-      "description": "Input signals from hardware to the ADC controller."
+      "description": "Input signal for hardware-to-register communication."
     },
     {
       "type": "interrupt",
       "direction": "output",
-      "protocol": "custom",
+      "protocol": "generic",
       "port": "intg_err_o",
       "width": 1,
       "description": "Output signal indicating integrity check errors."
@@ -111,13 +111,13 @@
       "name": "AW",
       "type": "int",
       "default": 7,
-      "description": "Address width for the ADC controller."
+      "description": "Address width for the register interface."
     },
     {
       "name": "DW",
       "type": "int",
       "default": 32,
-      "description": "Data width for the ADC controller."
+      "description": "Data width for the register interface."
     },
     {
       "name": "DBW",
@@ -153,18 +153,18 @@
       "name": "NumRegs",
       "type": "int",
       "default": 32,
-      "description": "Number of registers for every interface."
+      "description": "Number of registers in the ADC controller."
     }
   ],
   "performance": {},
   "architecture": {
     "type": "peripheral",
     "features": [
-      "ADC control and management",
-      "Power management with low-power modes",
-      "Multi-channel ADC support",
-      "Integrity check and error reporting",
-      "Configurable sampling and filtering"
+      "TileLink interface for register access",
+      "Low-power sampling mode",
+      "Configurable ADC filters",
+      "Integrity error detection and reporting",
+      "Support for multiple ADC channels"
     ]
   },
   "asic": {
@@ -185,7 +185,7 @@
     {
       "name": "tlul_pkg",
       "type": "library",
-      "description": "TileLink UL protocol package for communication."
+      "description": "TileLink Ultra-Lite protocol package."
     },
     {
       "name": "adc_ctrl_reg_pkg",
@@ -193,34 +193,24 @@
       "description": "Register package for ADC controller."
     },
     {
-      "name": "adc_ctrl_pkg",
-      "type": "library",
-      "description": "Package defining ADC controller-specific types and parameters."
-    },
-    {
       "name": "prim_assert",
       "type": "library",
-      "description": "Assertion primitives for design verification."
+      "description": "Primitive assertion library for OpenTitan."
     },
     {
       "name": "prim_reg_we_check",
       "type": "library",
-      "description": "Primitive for checking write enable signals."
-    },
-    {
-      "name": "tlul_cmd_intg_chk",
-      "type": "library",
-      "description": "TileLink command integrity check module."
-    },
-    {
-      "name": "tlul_rsp_intg_gen",
-      "type": "library",
-      "description": "TileLink response integrity generation module."
+      "description": "Primitive module for write enable checking."
     },
     {
       "name": "tlul_adapter_reg",
-      "type": "library",
-      "description": "TileLink adapter for register interface."
+      "type": "core",
+      "description": "TileLink-to-register adapter module."
+    },
+    {
+      "name": "tlul_rsp_intg_gen",
+      "type": "core",
+      "description": "TileLink response integrity generation module."
     }
   ],
   "test": {
@@ -237,15 +227,15 @@
   "categories": [
     {
       "main_category": "Analog & Mixed-Signal",
-      "sub_category": "ADC Controllers"
+      "sub_category": "Converters"
     }
   ],
   "keywords": [
     "ADC",
     "Analog-to-Digital Converter",
-    "Power Management",
-    "OpenTitan",
-    "TileLink"
+    "Low-Power",
+    "TileLink",
+    "OpenTitan"
   ],
   "trust": {
     "verification_level": "silicon_proven",
@@ -253,38 +243,16 @@
     "fpga_validated": false,
     "formal_verified": false,
     "maintained": true,
-    "last_activity": "2026-03-27"
+    "last_activity": "2026-04-19"
   },
   "meta": {
     "template": {
       "generator": "github-models-ai",
       "template_version": "1.0.0",
-      "generated_at": "2026-03-27T23:04:48Z"
+      "generated_at": "2026-04-19T06:11:59Z"
     },
     "schema": {
       "version": "1.0.0"
     }
-  },
-  "rtl_files": [
-    "rtl/adc_ctrl.sv",
-    "rtl/adc_ctrl_core.sv",
-    "rtl/adc_ctrl_fsm.sv",
-    "rtl/adc_ctrl_intr.sv",
-    "rtl/adc_ctrl_pkg.sv",
-    "rtl/adc_ctrl_reg_pkg.sv",
-    "rtl/adc_ctrl_reg_top.sv"
-  ],
-  "rtl_quality": {
-    "module_prefixed": true,
-    "defines_prefixed": true,
-    "header_guards": false,
-    "one_module_per_file": true,
-    "self_contained_includes": false,
-    "no_translate_pragmas": true,
-    "lint_clean": false,
-    "no_casex": true,
-    "width_clean": false,
-    "no_sv_keyword_conflicts": true
-  },
-  "defines": []
+  }
 }
