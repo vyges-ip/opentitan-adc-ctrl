@@ -50,20 +50,25 @@
       "description": "Active-low reset for the core clock domain."
     },
     {
+      "name": "tl",
       "type": "bus",
+      "protocol": "tl-ul",
       "direction": "slave",
-      "protocol": "TL-UL",
-      "port": "tl_i",
-      "width": 32,
-      "description": "TileLink host-to-device interface for register access."
-    },
-    {
-      "type": "bus",
-      "direction": "master",
-      "protocol": "TL-UL",
-      "port": "tl_o",
-      "width": 32,
-      "description": "TileLink device-to-host interface for register responses."
+      "description": "TL-UL device register interface (h2d in / d2h out).",
+      "signals": [
+        {
+          "name": "tl_i",
+          "direction": "input",
+          "type": "bus",
+          "width": 1
+        },
+        {
+          "name": "tl_o",
+          "direction": "output",
+          "type": "bus",
+          "width": 1
+        }
+      ]
     },
     {
       "type": "interrupt",
@@ -237,7 +242,7 @@
       "rtl_files": [
         "vyges-additions/vyges_adc_ctrl.sv"
       ],
-      "note": "Wired via the vyges-additions facade vyges_adc_ctrl: presents clk/rst + TL-UL + the two interrupts. The always-on domain is folded onto the core clock, the AST analog front-end is unwired (adc_i grounded), and alerts are terminated locally. adc_ctrl folds intg_err_o/reg2hw/hw2reg internally (they are reg_top<->core signals, not top-level ports) and surfaces integrity faults via alert_tx_o \u2014 the prior metadata listed them in error."
+      "note": "Wired via the vyges-additions facade vyges_adc_ctrl: presents clk/rst + TL-UL + the two interrupts. The always-on domain is folded onto the core clock, the AST analog front-end is unwired (adc_i grounded), and alerts are terminated locally. adc_ctrl folds intg_err_o/reg2hw/hw2reg internally (they are reg_top<->core signals, not top-level ports) and surfaces integrity faults via alert_tx_o — the prior metadata listed them in error."
     }
   }
 }
