@@ -14,7 +14,7 @@
     "digital"
   ],
   "created": "2026-04-19T06:11:59Z",
-  "updated": "2026-04-19T06:11:59Z",
+  "updated": "2026-06-25T04:05:10Z",
   "source": {
     "type": "git",
     "url": "https://github.com/lowRISC/opentitan",
@@ -39,7 +39,7 @@
       "protocol": "generic",
       "port": "clk_i",
       "width": 1,
-      "description": "Primary clock input for the ADC controller."
+      "description": "Primary clock input."
     },
     {
       "type": "reset",
@@ -47,23 +47,7 @@
       "protocol": "generic",
       "port": "rst_ni",
       "width": 1,
-      "description": "Active-low reset signal for the primary clock domain."
-    },
-    {
-      "type": "clock",
-      "direction": "input",
-      "protocol": "generic",
-      "port": "clk_aon_i",
-      "width": 1,
-      "description": "Always-on clock input for the ADC controller."
-    },
-    {
-      "type": "reset",
-      "direction": "input",
-      "protocol": "generic",
-      "port": "rst_aon_ni",
-      "width": 1,
-      "description": "Active-low reset signal for the always-on clock domain."
+      "description": "Active-low reset for the core clock domain."
     },
     {
       "type": "bus",
@@ -82,28 +66,20 @@
       "description": "TileLink device-to-host interface for register responses."
     },
     {
-      "type": "data",
+      "type": "interrupt",
       "direction": "output",
-      "protocol": "custom",
-      "port": "reg2hw",
-      "width": 32,
-      "description": "Output signal for register-to-hardware communication."
-    },
-    {
-      "type": "data",
-      "direction": "input",
-      "protocol": "custom",
-      "port": "hw2reg",
-      "width": 32,
-      "description": "Input signal for hardware-to-register communication."
+      "protocol": "generic",
+      "port": "intr_match_pending_o",
+      "width": 1,
+      "description": "Interrupt: an ADC measurement match or measurement completion is pending."
     },
     {
       "type": "interrupt",
       "direction": "output",
       "protocol": "generic",
-      "port": "intg_err_o",
+      "port": "wkup_req_o",
       "width": 1,
-      "description": "Output signal indicating integrity check errors."
+      "description": "Power-manager wakeup request (e.g. debug-cable detection)."
     }
   ],
   "parameters": [
@@ -253,6 +229,15 @@
     },
     "schema": {
       "version": "1.0.0"
+    }
+  },
+  "integration": {
+    "soc_generator_hints": {
+      "top_module": "vyges_adc_ctrl",
+      "rtl_files": [
+        "vyges-additions/vyges_adc_ctrl.sv"
+      ],
+      "note": "Wired via the vyges-additions facade vyges_adc_ctrl: presents clk/rst + TL-UL + the two interrupts. The always-on domain is folded onto the core clock, the AST analog front-end is unwired (adc_i grounded), and alerts are terminated locally. adc_ctrl folds intg_err_o/reg2hw/hw2reg internally (they are reg_top<->core signals, not top-level ports) and surfaces integrity faults via alert_tx_o \u2014 the prior metadata listed them in error."
     }
   }
 }
