@@ -130,7 +130,9 @@ module adc_ctrl_reg_top (
   logic intr_test_we;
   logic intr_test_wd;
   logic alert_test_we;
-  logic alert_test_wd;
+  logic alert_test_fatal_fault_wd;
+  logic alert_test_regwen_qs;
+  logic alert_test_regwen_wd;
   logic adc_en_ctl_we;
   logic [1:0] adc_en_ctl_qs;
   logic adc_en_ctl_busy;
@@ -1360,6 +1362,7 @@ module adc_ctrl_reg_top (
   ) u_intr_state (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -1388,6 +1391,7 @@ module adc_ctrl_reg_top (
   ) u_intr_enable (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (intr_enable_we),
@@ -1429,14 +1433,18 @@ module adc_ctrl_reg_top (
 
   // R[alert_test]: V(True)
   logic alert_test_qe;
-  logic [0:0] alert_test_flds_we;
+  logic [1:0] alert_test_flds_we;
   assign alert_test_qe = &alert_test_flds_we;
+  // Create REGWEN-gated WE signal
+  logic alert_test_gated_we;
+  assign alert_test_gated_we = alert_test_we && alert_test_regwen_qs;
+  //   F[fatal_fault]: 0:0
   prim_subreg_ext #(
     .DW    (1)
-  ) u_alert_test (
+  ) u_alert_test_fatal_fault (
     .re     (1'b0),
-    .we     (alert_test_we),
-    .wd     (alert_test_wd),
+    .we     (alert_test_gated_we),
+    .wd     (alert_test_fatal_fault_wd),
     .d      ('0),
     .qre    (),
     .qe     (alert_test_flds_we[0]),
@@ -1445,6 +1453,34 @@ module adc_ctrl_reg_top (
     .qs     ()
   );
   assign reg2hw.alert_test.qe = alert_test_qe;
+
+  //   F[regwen]: 31:31
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_test_regwen (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
+
+    // from register interface
+    .we     (alert_test_we),
+    .wd     (alert_test_regwen_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (alert_test_flds_we[1]),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_test_regwen_qs)
+  );
 
 
   // R[adc_en_ctl]: V(False)
@@ -1457,6 +1493,7 @@ module adc_ctrl_reg_top (
   ) u_adc_en_ctl_adc_enable (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_en_ctl_we),
@@ -1484,6 +1521,7 @@ module adc_ctrl_reg_top (
   ) u_adc_en_ctl_oneshot_mode (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_en_ctl_we),
@@ -1513,6 +1551,7 @@ module adc_ctrl_reg_top (
   ) u_adc_pd_ctl_lp_mode (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_pd_ctl_we),
@@ -1540,6 +1579,7 @@ module adc_ctrl_reg_top (
   ) u_adc_pd_ctl_pwrup_time (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_pd_ctl_we),
@@ -1567,6 +1607,7 @@ module adc_ctrl_reg_top (
   ) u_adc_pd_ctl_wakeup_time (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_pd_ctl_we),
@@ -1595,6 +1636,7 @@ module adc_ctrl_reg_top (
   ) u_adc_lp_sample_ctl (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_lp_sample_ctl_we),
@@ -1623,6 +1665,7 @@ module adc_ctrl_reg_top (
   ) u_adc_sample_ctl (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_sample_ctl_we),
@@ -1651,6 +1694,7 @@ module adc_ctrl_reg_top (
   ) u_adc_fsm_rst (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_fsm_rst_we),
@@ -1681,6 +1725,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_0_min_v_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_0_we),
@@ -1708,6 +1753,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_0_cond_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_0_we),
@@ -1735,6 +1781,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_0_max_v_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_0_we),
@@ -1762,6 +1809,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_0_en_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_0_we),
@@ -1792,6 +1840,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_1_min_v_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_1_we),
@@ -1819,6 +1868,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_1_cond_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_1_we),
@@ -1846,6 +1896,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_1_max_v_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_1_we),
@@ -1873,6 +1924,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_1_en_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_1_we),
@@ -1903,6 +1955,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_2_min_v_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_2_we),
@@ -1930,6 +1983,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_2_cond_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_2_we),
@@ -1957,6 +2011,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_2_max_v_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_2_we),
@@ -1984,6 +2039,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_2_en_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_2_we),
@@ -2014,6 +2070,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_3_min_v_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_3_we),
@@ -2041,6 +2098,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_3_cond_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_3_we),
@@ -2068,6 +2126,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_3_max_v_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_3_we),
@@ -2095,6 +2154,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_3_en_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_3_we),
@@ -2125,6 +2185,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_4_min_v_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_4_we),
@@ -2152,6 +2213,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_4_cond_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_4_we),
@@ -2179,6 +2241,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_4_max_v_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_4_we),
@@ -2206,6 +2269,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_4_en_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_4_we),
@@ -2236,6 +2300,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_5_min_v_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_5_we),
@@ -2263,6 +2328,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_5_cond_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_5_we),
@@ -2290,6 +2356,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_5_max_v_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_5_we),
@@ -2317,6 +2384,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_5_en_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_5_we),
@@ -2347,6 +2415,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_6_min_v_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_6_we),
@@ -2374,6 +2443,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_6_cond_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_6_we),
@@ -2401,6 +2471,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_6_max_v_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_6_we),
@@ -2428,6 +2499,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_6_en_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_6_we),
@@ -2458,6 +2530,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_7_min_v_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_7_we),
@@ -2485,6 +2558,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_7_cond_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_7_we),
@@ -2512,6 +2586,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_7_max_v_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_7_we),
@@ -2539,6 +2614,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn0_filter_ctl_7_en_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn0_filter_ctl_7_we),
@@ -2569,6 +2645,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_0_min_v_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_0_we),
@@ -2596,6 +2673,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_0_cond_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_0_we),
@@ -2623,6 +2701,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_0_max_v_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_0_we),
@@ -2650,6 +2729,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_0_en_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_0_we),
@@ -2680,6 +2760,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_1_min_v_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_1_we),
@@ -2707,6 +2788,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_1_cond_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_1_we),
@@ -2734,6 +2816,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_1_max_v_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_1_we),
@@ -2761,6 +2844,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_1_en_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_1_we),
@@ -2791,6 +2875,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_2_min_v_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_2_we),
@@ -2818,6 +2903,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_2_cond_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_2_we),
@@ -2845,6 +2931,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_2_max_v_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_2_we),
@@ -2872,6 +2959,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_2_en_2 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_2_we),
@@ -2902,6 +2990,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_3_min_v_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_3_we),
@@ -2929,6 +3018,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_3_cond_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_3_we),
@@ -2956,6 +3046,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_3_max_v_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_3_we),
@@ -2983,6 +3074,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_3_en_3 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_3_we),
@@ -3013,6 +3105,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_4_min_v_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_4_we),
@@ -3040,6 +3133,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_4_cond_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_4_we),
@@ -3067,6 +3161,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_4_max_v_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_4_we),
@@ -3094,6 +3189,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_4_en_4 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_4_we),
@@ -3124,6 +3220,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_5_min_v_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_5_we),
@@ -3151,6 +3248,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_5_cond_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_5_we),
@@ -3178,6 +3276,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_5_max_v_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_5_we),
@@ -3205,6 +3304,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_5_en_5 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_5_we),
@@ -3235,6 +3335,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_6_min_v_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_6_we),
@@ -3262,6 +3363,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_6_cond_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_6_we),
@@ -3289,6 +3391,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_6_max_v_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_6_we),
@@ -3316,6 +3419,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_6_en_6 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_6_we),
@@ -3346,6 +3450,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_7_min_v_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_7_we),
@@ -3373,6 +3478,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_7_cond_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_7_we),
@@ -3400,6 +3506,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_7_max_v_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_7_we),
@@ -3427,6 +3534,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn1_filter_ctl_7_en_7 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_chn1_filter_ctl_7_we),
@@ -3459,6 +3567,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_0_adc_chn_value_ext_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3486,6 +3595,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_0_adc_chn_value_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3513,6 +3623,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_0_adc_chn_value_intr_ext_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3540,6 +3651,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_0_adc_chn_value_intr_0 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3572,6 +3684,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_1_adc_chn_value_ext_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3599,6 +3712,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_1_adc_chn_value_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3626,6 +3740,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_1_adc_chn_value_intr_ext_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3653,6 +3768,7 @@ module adc_ctrl_reg_top (
   ) u_adc_chn_val_1_adc_chn_value_intr_1 (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -3682,6 +3798,7 @@ module adc_ctrl_reg_top (
   ) u_adc_wakeup_ctl_match_en (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_wakeup_ctl_we),
@@ -3709,6 +3826,7 @@ module adc_ctrl_reg_top (
   ) u_adc_wakeup_ctl_trans_en (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_adc_wakeup_ctl_we),
@@ -3740,6 +3858,7 @@ module adc_ctrl_reg_top (
   ) u_filter_status_match (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_filter_status_we),
@@ -3767,6 +3886,7 @@ module adc_ctrl_reg_top (
   ) u_filter_status_trans (
     .clk_i   (clk_aon_i),
     .rst_ni  (rst_aon_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (aon_filter_status_we),
@@ -3796,6 +3916,7 @@ module adc_ctrl_reg_top (
   ) u_adc_intr_ctl_match_en (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (adc_intr_ctl_we),
@@ -3823,6 +3944,7 @@ module adc_ctrl_reg_top (
   ) u_adc_intr_ctl_trans_en (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (adc_intr_ctl_we),
@@ -3850,6 +3972,7 @@ module adc_ctrl_reg_top (
   ) u_adc_intr_ctl_oneshot_en (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (adc_intr_ctl_we),
@@ -3879,6 +4002,7 @@ module adc_ctrl_reg_top (
   ) u_adc_intr_status_match (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (adc_intr_status_we),
@@ -3906,6 +4030,7 @@ module adc_ctrl_reg_top (
   ) u_adc_intr_status_trans (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (adc_intr_status_we),
@@ -3933,6 +4058,7 @@ module adc_ctrl_reg_top (
   ) u_adc_intr_status_oneshot (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (adc_intr_status_we),
@@ -4055,7 +4181,9 @@ module adc_ctrl_reg_top (
   assign intr_test_wd = reg_wdata[0];
   assign alert_test_we = addr_hit[3] & reg_we & !reg_error;
 
-  assign alert_test_wd = reg_wdata[0];
+  assign alert_test_fatal_fault_wd = reg_wdata[0];
+
+  assign alert_test_regwen_wd = reg_wdata[31];
   assign adc_en_ctl_we = addr_hit[4] & reg_we & !reg_error;
 
 
@@ -4225,6 +4353,7 @@ module adc_ctrl_reg_top (
 
       addr_hit[3]: begin
         reg_rdata_next[0] = '0;
+        reg_rdata_next[31] = alert_test_regwen_qs;
       end
 
       addr_hit[4]: begin
